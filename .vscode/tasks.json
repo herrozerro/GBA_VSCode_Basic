@@ -52,19 +52,19 @@
                 "command": "/usr/bin/mgba-qt",
                 "args": ["-g", "${workspaceFolder}/${workspaceFolderBasename}.gba"]
             },
-            "presentation": {
-                "clear": true,
-                "reveal": "always",
-                "panel": "new"
-            },
-            "command": "debuggerReady",
-            "problemMatcher": {
-                "background": {
-                    "activeOnStart": true,
-                    "beginsPattern": "^.*debuggerReady.*$",
-                    "endsPattern": "^.*debuggerReady.*$"
-                },
-            }
+            // "presentation": {
+            //     "clear": true,
+            //     "reveal": "always",
+            //     "panel": "new"
+            // },
+            // "command": "debuggerReady",
+            // "problemMatcher": {
+            //     "background": {
+            //         "activeOnStart": true,
+            //         "beginsPattern": "^.*debuggerReady.*$",
+            //         "endsPattern": "^.*debuggerReady.*$"
+            //     },
+            // }
         },
         {
             "label": "run",
