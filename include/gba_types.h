@@ -1,8 +1,8 @@
 #pragma once
 
 
-#ifndef __GBA_CONSTANTS_H__
-#define __GBA_CONSTANTS_H__
+#ifndef __GBA_TYPES_H__
+#define __GBA_TYPES_H__
 
 
 //define basic types

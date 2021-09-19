@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "gba_macros.h": "c"
+        "gba_macros.h": "c",
+        "gba_types.h": "c"
     }
 }

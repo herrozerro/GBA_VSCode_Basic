@@ -1,16 +1,17 @@
 #pragma once
 
-
-#ifndef __GBA_CONSTANTS_H__
-#define __GBA_CONSTANTS_H__
+#ifndef __GBA_CONSTANTS_H
+#define __GBA_CONSTANTS_H
 
 #include "gba_types.h"
 
 
-#define REG_DISPLAY_CONTROL *((vu16*)(0x0400 0000))
-#define REG_DISPLAY_STATUS *((vu16*)(0x0400 0004))
-#define REG_DISPLAY_VTRIGGER_VALUE *((vu8*)(0x0400 0005));
-#define REG_VERTICAL_COUNT *((vu16*)(0x0400 0006))
+#define REG_DISPLAY_CONTROL *((vu16*)(0x04000000))
+#define REG_DISPLAY_STATUS *((vu16*)(0x04000004))
+#define REG_DISPLAY_VTRIGGER_VALUE *((vu8*)(0x04000005))
+#define REG_VERTICAL_COUNT *((vu16*)(0x04000006))
+#define REG_KEYINPUT_STATUS	*((vu16*)(0x04000130))
+#define REG_KEY_INTERRUPT_CONTROL *((vu16*)(0x04000132))
 
 #define REG_SCREENBUFFER ((vu16*)0x06000000)
 
@@ -44,5 +45,16 @@
 #define FLAG_DISPLAY_STATUS_VCOUNT_INTERRUPT_REQUEST 0x0010
 
 
+
+#define INPUT_KEY_A        0x0001
+#define INPUT_KEY_B        0x0002
+#define INPUT_KEY_SELECT   0x0004
+#define INPUT_KEY_START    0x0008
+#define INPUT_KEY_RIGHT    0x0010
+#define INPUT_KEY_LEFT     0x0020
+#define INPUT_KEY_UP       0x0040
+#define INPUT_KEY_DOWN     0x0080
+#define INPUT_KEY_R        0x0100
+#define INPUT_KEY_L        0x0200
 
 #endif

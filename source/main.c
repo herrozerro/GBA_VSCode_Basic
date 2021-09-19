@@ -1,11 +1,16 @@
-#include "gba_macros.h"
 #include "gba_types.h"
 #include "gba_constants.h"
+#include "gba_input.h"
+#include "gba_math.h"
+#include "gba_macros.h"
+#include "game/rect.h"
 
 
 #pragma region Tutorial_000_code
 
 
+
+#define PONG_PADDLE_SPEED 3
 
 #define REG_DISPCTN *((vu32*)(0x04000000))
 #define VIDEOMODE_3 0x0403
@@ -36,11 +41,11 @@ void drawRect(s32 a_left, s32 a_top, s32 a_width, s32 a_height, u16 a_color)
 	}	
 }
 
-s32 abs(s32 a_val)
-{
-	s32 mask = a_val >> 31;
-	return (a_val ^ mask) - mask;
-}
+// s32 abs(s32 a_val)
+// {
+// 	s32 mask = a_val >> 31;
+// 	return (a_val ^ mask) - mask;
+// }
 
 void drawLine(s32 a_x1, s32 a_y1, s32 a_x2, s32 a_y2, u16 a_color)
 {
@@ -54,8 +59,8 @@ void drawLine(s32 a_x1, s32 a_y1, s32 a_x2, s32 a_y2, u16 a_color)
 	if (w < 0) dx1 = dx2 -1; else if (w > 0) dx1 = dx2 = 1;
 	if (h < 0) dy1 = -1; else if (h > 0) dy1 = 1;
 	//figure out which is the longest displacement the horizontal or the vertical
-	s32 longest = abs(w);
-	s32 shortest = abs(h);
+	s32 longest = abs_s32(w);
+	s32 shortest = abs_s32(h);
 	//test to make sure assumption is correct
 	if (shortest > longest)
 	{
@@ -114,7 +119,9 @@ s32 gba_rand_range(s32 a_min, s32 a_max)
 
 typedef struct Ball
 {
-	s32 x, y, xDir, yDir, size;
+	RectInfo rect;
+	//s32 x, y, xDir, yDir, size;
+	s32 xDir, yDir;
 	u16 colour;
 } Ball;
 
@@ -129,9 +136,13 @@ void StartBall (Ball* a_ball)
 
 void InitBall( Ball* a_ball, s32 a_x, s32 a_y, s32 a_size, u16 a_colour)
 {
-	a_ball->x = a_x;
-	a_ball->y = a_y;
-	a_ball->size = a_size;
+	a_ball->rect.X = a_x;
+	a_ball->rect.Y = a_y;
+	a_ball->rect.Width = a_size;
+	a_ball->rect.Height = a_size;
+	// a_ball->x = a_x;
+	// a_ball->y = a_y;
+	// a_ball->size = a_size;
 	a_ball->colour = a_colour;
 	a_ball->xDir = a_ball->yDir = 0;
 	StartBall(a_ball);
@@ -139,24 +150,24 @@ void InitBall( Ball* a_ball, s32 a_x, s32 a_y, s32 a_size, u16 a_colour)
 
 void MoveBall(Ball* a_ball)
 {
-	a_ball->y += a_ball->yDir;
-	if (a_ball->y <0)
+	a_ball->rect.Y += a_ball->yDir;
+	if (a_ball->rect.Y <0)
 	{
-		a_ball->y = 0;
+		a_ball->rect.Y = 0;
 		a_ball->yDir *= -1;
 	}
-	if (a_ball->y > SCREEN_H - a_ball->size)
+	if (a_ball->rect.Y > SCREEN_H - a_ball->rect.Height)
 	{
-		a_ball->y = SCREEN_H - a_ball->size;
+		a_ball->rect.Y = SCREEN_H - a_ball->rect.Height;
 		a_ball->yDir *= -1;
 	}
 	
-	a_ball->x += a_ball->xDir;
+	a_ball->rect.X += a_ball->xDir;
 
-	if (a_ball->x <0 || a_ball->x > SCREEN_W - a_ball->size)
+	if (a_ball->rect.X < 0 || a_ball->rect.X  > SCREEN_W - a_ball->rect.Width)
 	{
-		a_ball->x = (SCREEN_W >> 1) - (a_ball->size >> 1);
-		a_ball->y = (SCREEN_H >> 1) - (a_ball->size >> 1);
+		a_ball->rect.X = (SCREEN_W >> 1) - (a_ball->rect.Width >> 1);
+		a_ball->rect.Y = (SCREEN_H >> 1) - (a_ball->rect.Height >> 1);
 		a_ball->xDir = 0; a_ball->yDir = 0;
 		StartBall(a_ball);
 	}
@@ -164,12 +175,12 @@ void MoveBall(Ball* a_ball)
 
 void DrawBall(Ball* a_ball)
 {
-	drawRect(a_ball->x, a_ball->y, a_ball->size, a_ball->size, a_ball->colour);
+	drawRect(a_ball->rect.X, a_ball->rect.Y, a_ball->rect.Width, a_ball->rect.Height, a_ball->colour);
 }
 
 void ClearBall(Ball* a_ball)
 {
-	drawRect(a_ball->x, a_ball->y, a_ball->size, a_ball->size, setColor(0,0,0));
+	drawRect(a_ball->rect.X, a_ball->rect.Y, a_ball->rect.Width, a_ball->rect.Height, 0);
 }
 
 #pragma endregion
@@ -178,38 +189,50 @@ void ClearBall(Ball* a_ball)
 
 typedef struct Paddle
 {
-	s32 x, y, width, height;
+	RectInfo rect;
+	//s32 x, y, width, height;
 	u16 colour;
 }Paddle;
 
 void InitPaddle(Paddle* a_paddle, s32 a_x, s32 a_y, s32 a_width, s32 a_height, u16 a_colour)
 {
-	a_paddle->x = a_x;
-	a_paddle->y = a_y;
-	a_paddle->width = a_width;
-	a_paddle->height = a_height;
+	a_paddle->rect.X = a_x;
+	a_paddle->rect.Y = a_y;
+	a_paddle->rect.Width = a_width;
+	a_paddle->rect.Height = a_height;
+	// a_paddle->x = a_x;
+	// a_paddle->y = a_y;
+	// a_paddle->width = a_width;
+	// a_paddle->height = a_height;
 	a_paddle->colour = a_colour;
 }
 
 void DrawPaddle(Paddle* a_paddle)
 {
-	drawRect(a_paddle->x, a_paddle->y, a_paddle->width, a_paddle->height, a_paddle->colour);
+	drawRect(a_paddle->rect.X, a_paddle->rect.Y, a_paddle->rect.Width, a_paddle->rect.Height, a_paddle->colour);
 }
 
 void ClearPaddle(Paddle* a_paddle)
 {
-	drawRect(a_paddle->x, a_paddle->y, a_paddle->width, a_paddle->height, setColor(0,0,0));
+	drawRect(a_paddle->rect.X, a_paddle->rect.Y, a_paddle->rect.Width, a_paddle->rect.Height, setColor(0,0,0));
 }
 
-void MovePaddle(Paddle* a_paddle)
+void MovePaddle(Paddle* a_paddle, s32 direction, s32 speed)
 {
-
+	s32 newResult = clamp_s32(
+		a_paddle->rect.Y + direction * speed,
+		0,
+		SCREEN_H - a_paddle->rect.Height);
+		
+	a_paddle->rect.Y = newResult;
 }
 
 #pragma endregion
 
+
 #define REG_VCOUNT (*(vu16*)(0x04000006))
-void vsync()
+
+inline void vsync()
 {
 	while (REG_VCOUNT >= SCREEN_H);
 	while (REG_VCOUNT < SCREEN_H);	
@@ -228,29 +251,61 @@ int main()
 	InitPaddle(&p1, 10,60,8,40, setColor(0,0,31));
 	Paddle p2;
 	InitPaddle(&p2, SCREEN_W - 18,60,8,40, setColor(31,0,0));
-	// s32 t = 0;
+	// s32 t = 0; 
 	while(1){
 		vsync();
-		// ClearBall(&ball);
-		// ClearPaddle(&p1);
-		// ClearPaddle(&p2);
+		ClearPaddle(&p1);
+		ClearPaddle(&p2);
+		ClearBall(&ball);
+		PollKeys();
 
-		// MoveBall(&ball);
-		// DrawBall(&ball);
+		if (keyDown(INPUT_KEY_UP) != 0)
+		{
+			MovePaddle(&p1, -1, PONG_PADDLE_SPEED);
+		}
+		if (keyDown(INPUT_KEY_DOWN) != 0)
+		{
+			MovePaddle(&p1, 1, PONG_PADDLE_SPEED);
+		}
 
-		// DrawPaddle(&p1);
-		// DrawPaddle(&p2);
+		if (keyDown(INPUT_KEY_A) != 0)
+		{
+			MovePaddle(&p2, -1, PONG_PADDLE_SPEED);
+		}
+		if (keyDown(INPUT_KEY_B) != 0)
+		{
+			MovePaddle(&p2, 1, PONG_PADDLE_SPEED);
+		}
+		MoveBall(&ball);
+
+
+		if (rectOverlaps(&p1.rect, &ball.rect))
+		{
+			ball.rect.X = p1.rect.X + p1.rect.Width;
+			ball.xDir = 1;
+		}
+		if (rectOverlaps(&p2.rect, &ball.rect))
+		{
+			ball.rect.X = p2.rect.X - ball.rect.Width;
+			ball.xDir = -1;
+		}
+
+
+
+		DrawPaddle(&p1);
+		DrawPaddle(&p2);
+		DrawBall(&ball);
 		
 		// drawLine(10,4,230,4, setColor(31,31,31));
 		// drawLine(10,156,230,156, setColor(31,31,31));
 
-		drawLine(10,4,230,4, setColor(31,31,31));
-		drawLine(10,156,230,156, setColor(31,31,31));
+		// drawLine(10,4,230,4, setColor(31,31,31));
+		// drawLine(10,156,230,156, setColor(31,31,31));
 		
-		drawLine(10,4,230,156, setColor(2,31,15));
-		drawLine(10,156,230,4, setColor(2,15,31));
+		// drawLine(10,4,230,156, setColor(2,31,15));
+		// drawLine(10,156,230,4, setColor(2,15,31));
 
-		drawRect(100,60,40, 40, setColor(31,5,12));
+		//drawRect(100,60,40, 40, setColor(31,5,12));
 
 		// s32 x,y;
 		// for(x = 0; x < SCREEN_W; ++x)
