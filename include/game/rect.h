@@ -7,8 +7,8 @@
 
 typedef struct RectInfo {
 
-    u16 X;
-    u16 Y;
+    s16 X;
+    s16 Y;
     u16 Width;
     u16 Height;
 

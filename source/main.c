@@ -12,11 +12,11 @@
 
 #define PONG_PADDLE_SPEED 3
 
-#define REG_DISPCTN *((vu32*)(0x04000000))
-#define VIDEOMODE_3 0x0403
-#define BG_ENABLE2 0x0400
+// #define REG_DISPCTN *((vu32*)(0x04000000))
+// #define VIDEOMODE_3 0x0403
+// #define BG_ENABLE2 0x0400
 
-#define SCREENBUFFER ((vu16*)0x06000000)
+// #define SCREENBUFFER ((vu16*)0x06000000)
 #define SCREEN_W 240
 #define SCREEN_H 160
 
@@ -27,7 +27,7 @@ u16 setColor(u8 a_red, u8 a_green, u8 a_blue)
 
 void plotPixel( s32 a_x, s32 a_y, u16 a_color)
 {
-	SCREENBUFFER[a_y * SCREEN_W + a_x] = a_color;
+	REG_SCREENBUFFER[a_y * SCREEN_W + a_x] = a_color;
 }
 
 void drawRect(s32 a_left, s32 a_top, s32 a_width, s32 a_height, u16 a_color)
@@ -151,15 +151,15 @@ void InitBall( Ball* a_ball, s32 a_x, s32 a_y, s32 a_size, u16 a_colour)
 void MoveBall(Ball* a_ball)
 {
 	a_ball->rect.Y += a_ball->yDir;
-	if (a_ball->rect.Y <0)
+	if (a_ball->rect.Y < 0)
 	{
 		a_ball->rect.Y = 0;
-		a_ball->yDir *= -1;
+		a_ball->yDir = 1;
 	}
 	if (a_ball->rect.Y > SCREEN_H - a_ball->rect.Height)
 	{
 		a_ball->rect.Y = SCREEN_H - a_ball->rect.Height;
-		a_ball->yDir *= -1;
+		a_ball->yDir = -1;
 	}
 	
 	a_ball->rect.X += a_ball->xDir;
@@ -241,7 +241,10 @@ inline void vsync()
 int main()
 {
 	//set GBA rendering context to MODE 3 Bitmap Rendering
-	REG_DISPCTN = VIDEOMODE_3 | BG_ENABLE2;
+	REG_DISPLAY_CONTROL = 
+		FLAG_DISPLAY_ENABLE_BACKGROUND_2 |
+		FLAG_DISPLAY_VIDEO_MODE_3;
+	//REG_DISPCTN = VIDEOMODE_3 | BG_ENABLE2;
 
 	seed_gba_rand(23343);
 	Ball ball;
