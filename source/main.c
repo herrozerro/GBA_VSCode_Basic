@@ -11,6 +11,7 @@
 
 
 #define PONG_PADDLE_SPEED 3
+#define BALL_HIT_COUNTER_UPSPEED 5
 
 // #define REG_DISPCTN *((vu32*)(0x04000000))
 // #define VIDEOMODE_3 0x0403
@@ -123,14 +124,20 @@ typedef struct Ball
 	//s32 x, y, xDir, yDir, size;
 	s32 xDir, yDir;
 	u16 colour;
+	u16 speed, hitCounter;
 } Ball;
 
-void StartBall (Ball* a_ball)
+void StartBall (Ball* a_ball, s16 initialDirection)
 {
-	while (a_ball -> xDir == 0)
-	{
-		a_ball -> xDir = gba_rand_range(-1,2);
-	}
+	a_ball->rect.X = SCREEN_W >> 1;
+	a_ball->rect.Y = SCREEN_H >> 1;
+	a_ball->speed = 1;
+	a_ball->hitCounter = 0;
+	// while (a_ball -> xDir == 0)
+	// {
+	// 	a_ball -> xDir = gba_rand_range(-1,2);
+	// }
+	a_ball->xDir = initialDirection;
 	a_ball->yDir = gba_rand_range(-1,2);
 }
 
@@ -145,7 +152,7 @@ void InitBall( Ball* a_ball, s32 a_x, s32 a_y, s32 a_size, u16 a_colour)
 	// a_ball->size = a_size;
 	a_ball->colour = a_colour;
 	a_ball->xDir = a_ball->yDir = 0;
-	StartBall(a_ball);
+	StartBall(a_ball, -1);
 }
 
 void MoveBall(Ball* a_ball)
@@ -162,15 +169,23 @@ void MoveBall(Ball* a_ball)
 		a_ball->yDir = -1;
 	}
 	
-	a_ball->rect.X += a_ball->xDir;
+	a_ball->rect.X += a_ball->xDir * a_ball->speed;
 
-	if (a_ball->rect.X < 0 || a_ball->rect.X  > SCREEN_W - a_ball->rect.Width)
-	{
-		a_ball->rect.X = (SCREEN_W >> 1) - (a_ball->rect.Width >> 1);
-		a_ball->rect.Y = (SCREEN_H >> 1) - (a_ball->rect.Height >> 1);
-		a_ball->xDir = 0; a_ball->yDir = 0;
-		StartBall(a_ball);
-	}
+	// if (a_ball->rect.X < 0 || a_ball->rect.X  > SCREEN_W - a_ball->rect.Width)
+	// {
+	// 	a_ball->rect.X = (SCREEN_W >> 1) - (a_ball->rect.Width >> 1);
+	// 	a_ball->rect.Y = (SCREEN_H >> 1) - (a_ball->rect.Height >> 1);
+	// 	a_ball->xDir = 0; a_ball->yDir = 0;
+	// 	StartBall(a_ball);
+	// }
+}
+bool isBallInP1Goal(const Ball* ball)
+{
+	return ball->rect.X + ball->rect.Width / 2 < 0;
+}
+bool isBallInP2Goal(const Ball* ball)
+{
+	return ball->rect.X + ball->rect.Width / 2 > SCREEN_W;
 }
 
 void DrawBall(Ball* a_ball)
@@ -230,16 +245,18 @@ void MovePaddle(Paddle* a_paddle, s32 direction, s32 speed)
 #pragma endregion
 
 
-#define REG_VCOUNT (*(vu16*)(0x04000006))
+// #define REG_VCOUNT (*(vu16*)(0x04000006))
 
 inline void vsync()
 {
-	while (REG_VCOUNT >= SCREEN_H);
-	while (REG_VCOUNT < SCREEN_H);	
+	while (REG_VERTICAL_COUNT >= SCREEN_H);
+	while (REG_VERTICAL_COUNT < SCREEN_H);	
 }
 
 int main()
 {
+	u16 p1Points = 0, p2Points = 0;
+
 	//set GBA rendering context to MODE 3 Bitmap Rendering
 	REG_DISPLAY_CONTROL = 
 		FLAG_DISPLAY_ENABLE_BACKGROUND_2 |
@@ -286,13 +303,36 @@ int main()
 		{
 			ball.rect.X = p1.rect.X + p1.rect.Width;
 			ball.xDir = 1;
+			ball.hitCounter++;
+			if (ball.hitCounter >= BALL_HIT_COUNTER_UPSPEED)
+			{
+				ball.hitCounter = 0;
+				ball.speed++;
+			}
 		}
 		if (rectOverlaps(&p2.rect, &ball.rect))
 		{
 			ball.rect.X = p2.rect.X - ball.rect.Width;
 			ball.xDir = -1;
+			ball.hitCounter++;
+			if (ball.hitCounter >= BALL_HIT_COUNTER_UPSPEED)
+			{
+				ball.hitCounter = 0;
+				ball.speed++;
+			}
 		}
 
+		if (isBallInP1Goal(&ball))
+		{
+			p2Points++;
+			StartBall(&ball, -1);
+		}
+
+		if (isBallInP2Goal(&ball))
+		{
+			p1Points++;
+			StartBall(&ball, 1);
+		}
 
 
 		DrawPaddle(&p1);
