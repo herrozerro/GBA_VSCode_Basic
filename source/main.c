@@ -161,12 +161,12 @@ void MoveBall(Ball* a_ball)
 	if (a_ball->rect.Y < 0)
 	{
 		a_ball->rect.Y = 0;
-		a_ball->yDir = 1;
+		a_ball->yDir = abs_s32(a_ball->yDir);
 	}
 	if (a_ball->rect.Y > SCREEN_H - a_ball->rect.Height)
 	{
 		a_ball->rect.Y = SCREEN_H - a_ball->rect.Height;
-		a_ball->yDir = -1;
+		a_ball->yDir = -abs_s32(a_ball->yDir);
 	}
 	
 	a_ball->rect.X += a_ball->xDir * a_ball->speed;
@@ -196,6 +196,11 @@ void DrawBall(Ball* a_ball)
 void ClearBall(Ball* a_ball)
 {
 	drawRect(a_ball->rect.X, a_ball->rect.Y, a_ball->rect.Width, a_ball->rect.Height, 0);
+}
+
+s16 calculateCenterFactor(const RectInfo* ballRect, const RectInfo* paddleRect)
+{
+	return -((paddleRect->Y + (s16)paddleRect->Height / (s16)2) - (ballRect->Y + (s16)ballRect->Height / (s16)2)) / ((s16)ballRect->Height / (s16)2);
 }
 
 #pragma endregion
@@ -303,6 +308,7 @@ int main()
 		{
 			ball.rect.X = p1.rect.X + p1.rect.Width;
 			ball.xDir = 1;
+			ball.yDir = calculateCenterFactor(&ball.rect, &p1.rect);
 			ball.hitCounter++;
 			if (ball.hitCounter >= BALL_HIT_COUNTER_UPSPEED)
 			{
@@ -314,6 +320,7 @@ int main()
 		{
 			ball.rect.X = p2.rect.X - ball.rect.Width;
 			ball.xDir = -1;
+			ball.yDir = calculateCenterFactor(&ball.rect, &p2.rect);
 			ball.hitCounter++;
 			if (ball.hitCounter >= BALL_HIT_COUNTER_UPSPEED)
 			{
